@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Number;
 
 use crate::filtered_in_network_file::filter_nodes;
@@ -15,7 +15,7 @@ where
     filter_nodes(deserializer, filters)
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct InNetworkFile {
     pub reporting_entity_name: String,
     pub reporting_entity_type: String,
@@ -32,7 +32,7 @@ pub struct InNetworkFile {
     pub provider_references: Option<Vec<ProviderReference>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct InNetworkRateObject {
     pub negotiation_arrangement: String,
     pub name: String,
@@ -45,14 +45,14 @@ pub struct InNetworkRateObject {
     pub covered_services: Option<Vec<CoveredService>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct NegotiatedRate {
     pub negotiated_prices: Vec<NegotiatedPrice>,
     pub provider_groups: Option<Vec<ProviderGroup>>,
     pub provider_references: Option<Vec<Number>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct NegotiatedPrice {
     pub negotiated_rate: Number,
     pub negotiated_type: String,
@@ -63,7 +63,7 @@ pub struct NegotiatedPrice {
     pub additional_information: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub enum BillingClass {
     #[serde(rename = "professional")]
     Professional,
@@ -71,20 +71,20 @@ pub enum BillingClass {
     Institutional,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct ProviderGroup {
     pub npi: Vec<Number>,
     pub tin: Tin,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct Tin {
     #[serde(rename = "type")]
     pub type_: TinType,
     pub value: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum TinType {
     #[serde(rename = "ein")]
@@ -93,7 +93,7 @@ pub enum TinType {
     Npi,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct CoveredService {
     pub billing_code: String,
     pub billing_code_type: String,
@@ -101,7 +101,7 @@ pub struct CoveredService {
     pub description: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct ProviderReference {
     pub provider_group_id: Number,
     pub provider_groups: Option<Vec<ProviderGroup>>,
