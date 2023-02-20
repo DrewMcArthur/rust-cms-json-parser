@@ -1,10 +1,5 @@
-mod filtered_in_network_file;
-mod in_network_file_dto;
-mod node_filters;
+use rust_cms_json_parser::in_network_file_dto::{InNetworkFile, InNetworkRateObject};
 
-use crate::{
-    in_network_file_dto::{InNetworkFile, InNetworkRateObject},
-};
 fn main() {
     println!("Hello, world!");
     let _test = InNetworkFile {
