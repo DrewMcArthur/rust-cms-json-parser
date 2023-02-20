@@ -24,6 +24,7 @@ and is designed to be deserializable from JSON via the serde crate.
 the custom, filtered deserialization lives in `src/filtered_in_network_file.rs`.  
 this is where i put the `filter_nodes` function, which handles how 
 we deserialize the `in_network: Vec<InNetworkRateObject>` top-level key.
+it's based on the similar implementation in the [serde documentation here](https://serde.rs/stream-array.html)
 
 `src/node_filters.rs` defines the filtering functionality, 
 as used by the above deserializing function.
