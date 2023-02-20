@@ -1,6 +1,6 @@
 # cms json parser
 
-![rust build workflow](https://github.com/DrewMcArthur/rust-cms-json-parser/actions/workflows/rust.yml/badge.svg)
+[![rust build workflow](https://github.com/DrewMcArthur/rust-cms-json-parser/actions/workflows/rust.yml/badge.svg)](https://github.com/DrewMcArthur/rust-cms-json-parser/actions/workflows/rust.yml)
 
 
 this repo hosts code designed to parse an in-network-rate file, as defined by the [cms gov price-transparency-guide](https://github.com/CMSgov/price-transparency-guide).
