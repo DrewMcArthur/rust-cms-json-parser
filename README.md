@@ -1,5 +1,8 @@
 # cms json parser
 
+![rust build workflow](https://github.com/DrewMcArthur/rust-cms-json-parser/actions/workflows/rust.yml/badge.svg)
+
+
 this repo hosts code designed to parse an in-network-rate file, as defined by the [cms gov price-transparency-guide](https://github.com/CMSgov/price-transparency-guide).
 
 we implement a custom serde deserializer, which only keeps the RateObjects that match the billing codes we're looking for.
