@@ -1,0 +1,9 @@
+id,plan_name,plan_id_type,plan_id,plan_market_type
+1,plan1,type1,0000000,market_type1
+2,medicaid,hios,1111111111,individual
+3,medicare,hios,000000000,individual
+4,chip,hios,3333333333,group
+5,plan1,type1,0000000,market_type1
+6,medicaid,hios,1111111111,individual
+7,medicare,hios,000000000,individual
+8,chip,hios,3333333333,group

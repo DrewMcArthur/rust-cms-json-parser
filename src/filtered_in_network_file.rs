@@ -1,21 +1,26 @@
-use std::{marker::PhantomData, fmt};
+use std::{fmt, marker::PhantomData};
 
-use serde::{Deserializer, de::{Visitor, SeqAccess}};
+use serde::{
+    de::{SeqAccess, Visitor},
+    Deserializer,
+};
 
-use crate::{node_filters::NodeFilters, in_network_file_dto::InNetworkRateObject};
+use crate::{in_network_file_dto::InNetworkRateObject, node_filters::NodeFilters};
 
-pub fn filter_nodes<'de, D>(deserializer: D, filter: NodeFilters) -> Result<Vec<InNetworkRateObject>, D::Error>
+pub fn filter_nodes<'de, D>(
+    deserializer: D,
+    filter: NodeFilters,
+) -> Result<Vec<InNetworkRateObject>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    struct FilteredRateObjectVisitor { 
-        data: PhantomData<fn() -> InNetworkRateObject>, 
-        filter: NodeFilters 
+    struct FilteredRateObjectVisitor {
+        data: PhantomData<fn() -> InNetworkRateObject>,
+        filter: NodeFilters,
     }
 
-    impl<'de> Visitor<'de> for FilteredRateObjectVisitor
-    {
-        // return value of visitor.  will return a vector of 
+    impl<'de> Visitor<'de> for FilteredRateObjectVisitor {
+        // return value of visitor.  will return a vector of
         // only the RateObjects matching the given NodeFilter.
         type Value = Vec<InNetworkRateObject>;
 
@@ -28,7 +33,7 @@ where
             S: SeqAccess<'de>,
         {
             // Start with an empty Vec
-            let mut filtered_nodes = vec!();
+            let mut filtered_nodes = vec![];
 
             // only keep nodes that match our filter
             while let Some(value) = seq.next_element()? {
@@ -39,13 +44,14 @@ where
 
             Ok(filtered_nodes)
         }
-
-
     }
 
     // Create the visitor and ask the deserializer to drive it. The
     // deserializer will call visitor.visit_seq() if a seq is present in
     // the input data.
-    let visitor = FilteredRateObjectVisitor { data: PhantomData, filter };
+    let visitor = FilteredRateObjectVisitor {
+        data: PhantomData,
+        filter,
+    };
     deserializer.deserialize_seq(visitor)
 }

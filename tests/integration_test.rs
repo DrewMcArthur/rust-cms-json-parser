@@ -1,6 +1,16 @@
-use std::{path::{Path, PathBuf}, fs};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
-use rust_cms_json_parser::in_network_file_dto::InNetworkFile;
+use rust_cms_json_parser::{
+    in_network_file_dto::InNetworkFile,
+    index_file_parsing::{
+        self,
+        csv_meta_repository::CsvMetaRepository,
+        meta_repository_trait::{DbLinkInput, FileRowInput, MetaRepository, PlanInput},
+    },
+};
 
 fn file_name_is_json(path: &PathBuf) -> bool {
     match path.extension() {
@@ -29,4 +39,41 @@ fn it_deserializes_cms_examples() {
             );
         }
     }
+}
+
+#[test]
+fn it_parses_the_example_index_file() {
+    let example_index_file_path =
+        "./price-transparency-guide/examples/table-of-contents/table-of-contents-sample.json";
+    index_file_parsing::parse_index_file(example_index_file_path);
+}
+
+#[test]
+fn it_writes_to_csv_meta_repo() {
+    let repo: CsvMetaRepository = CsvMetaRepository {
+        files_csv_path: "./db/files.csv",
+        links_csv_path: "./db/links.csv",
+        plans_csv_path: "./db/plans.csv",
+    };
+
+    let file_id: usize = repo.add_file(&mut FileRowInput {
+        url: "example.com/file.json",
+        filename: "file.json",
+        reporting_entity_name: "drew",
+        reporting_entity_type: "type1",
+    });
+
+    let plan_id: usize = repo.add_plan(&mut PlanInput {
+        plan_name: "plan1",
+        plan_id_type: "type1",
+        plan_market_type: "market_type1",
+        plan_id: "0000000",
+    });
+
+    repo.add_link(&mut DbLinkInput {
+        from_id: file_id,
+        from_type: "rate_file",
+        to_id: plan_id,
+        to_type: "plan",
+    });
 }

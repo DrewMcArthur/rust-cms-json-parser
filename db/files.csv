@@ -1,0 +1,15 @@
+id,url,filename,reporting_entity_name,reporting_entity_type
+1,example.com/file.json,file.json,drew,type1
+2,./price-transparency-guide/examples/table-of-contents/table-of-contents-sample.json,index,medicare,medicare
+3,https://www.some_site.com/files/in-network-file-123456.json,in-network-file-123456.json,medicare,medicare
+4,https://www.some_site.com/files/behavioral-health-0000.json,behavioral-health-0000.json,medicare,medicare
+5,https://www.some_site.com/files/allowed-amount-file-987665.json,allowed amount file,medicare,medicare
+6,https://www.some_site.com/files/chip-in-network-file.json,chip-in-network-file.json,medicare,medicare
+7,https://www.some_site.com/files/chip-allowed-amount-file.json,allowed amount file,medicare,medicare
+8,example.com/file.json,file.json,drew,type1
+9,./price-transparency-guide/examples/table-of-contents/table-of-contents-sample.json,index,medicare,medicare
+10,https://www.some_site.com/files/in-network-file-123456.json,in-network-file-123456.json,medicare,medicare
+11,https://www.some_site.com/files/behavioral-health-0000.json,behavioral-health-0000.json,medicare,medicare
+12,https://www.some_site.com/files/allowed-amount-file-987665.json,allowed amount file,medicare,medicare
+13,https://www.some_site.com/files/chip-in-network-file.json,chip-in-network-file.json,medicare,medicare
+14,https://www.some_site.com/files/chip-allowed-amount-file.json,allowed amount file,medicare,medicare
