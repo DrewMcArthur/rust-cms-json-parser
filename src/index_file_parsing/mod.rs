@@ -30,7 +30,10 @@ pub fn parse_index_file(path: &str) {
         reporting_entity_type: &index_file.reporting_entity_type,
     });
 
+    let mut i = 0;
     for node in index_file.reporting_structure {
+        println!("handling reporting structure {i}");
+        i += 1;
         let mut plan_ids: Vec<usize> = vec![];
         let mut file_ids: Vec<usize> = vec![];
 

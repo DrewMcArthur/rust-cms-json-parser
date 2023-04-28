@@ -1,3 +1,5 @@
+pub mod channel_deserializer;
+pub mod generator;
 mod index_file_parsing;
 
 fn main() {
