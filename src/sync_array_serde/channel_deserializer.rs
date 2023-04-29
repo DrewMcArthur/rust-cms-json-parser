@@ -10,7 +10,7 @@ use serde::{
     Deserialize, Deserializer,
 };
 
-use super::generator::ChannelGenerator;
+use super::channel_generator::ChannelGenerator;
 
 // an implementation of a serde deserializer that returns a channel receiver immediately,
 // and in a background thread starts deserializing objects and sending them to a channel,

@@ -1,8 +1,7 @@
 use serde::Deserialize;
 
-use crate::sync_array_serde::{
-    channel_deserializer::deserialize_to_channel, generator::ChannelGenerator,
-};
+use crate::sync_array_serde::channel_deserializer::deserialize_to_channel;
+use crate::sync_array_serde::channel_generator::ChannelGenerator;
 
 #[derive(Deserialize)]
 pub struct IndexFile {

@@ -1,2 +1,2 @@
 pub mod channel_deserializer;
-pub mod generator;
+pub mod channel_generator;
