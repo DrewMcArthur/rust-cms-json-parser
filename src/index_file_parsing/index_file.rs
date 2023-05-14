@@ -1,10 +1,28 @@
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
+pub struct IndexFileMetadata {
+    pub reporting_entity_name: String,
+    pub reporting_entity_type: String,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct IndexFile {
     pub reporting_entity_name: String,
     pub reporting_entity_type: String,
     pub reporting_structure: Vec<ReportingStructure>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct AsyncIndexFile {
+    pub reporting_entity_name: String,
+    pub reporting_entity_type: String,
+    pub reporting_structure_processing_stats: ProcessingStats,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ProcessingStats {
+    pub num_reporting_structures: usize,
 }
 
 #[derive(Deserialize, Debug)]

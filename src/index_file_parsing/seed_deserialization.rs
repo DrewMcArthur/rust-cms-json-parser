@@ -6,7 +6,9 @@ use serde::{
     Deserialize, Deserializer,
 };
 
-use super::index_file::IndexFile;
+use crate::index_file_parsing::index_file::ProcessingStats;
+
+use super::index_file::AsyncIndexFile;
 
 pub struct ItemSeed<T> {
     pub sender: SyncSender<T>,
@@ -16,7 +18,7 @@ impl<'de, T> DeserializeSeed<'de> for ItemSeed<T>
 where
     T: Deserialize<'de>,
 {
-    type Value = ();
+    type Value = usize;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
@@ -30,7 +32,7 @@ where
         where
             T: Deserialize<'de>,
         {
-            type Value = ();
+            type Value = usize;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("an array of objects of type T")
@@ -40,13 +42,15 @@ where
             where
                 A: SeqAccess<'de>,
             {
+                let mut num_items: usize = 0;
                 while let Some(n) = seq.next_element()? {
                     // Might want some better error handling here.
                     if self.sender.send(n).is_err() {
                         break;
                     }
+                    num_items += 1;
                 }
-                Ok(())
+                Ok(num_items)
             }
         }
 
@@ -64,7 +68,7 @@ impl<'de, T> DeserializeSeed<'de> for FileSeed<T>
 where
     T: Deserialize<'de>,
 {
-    type Value = IndexFile;
+    type Value = AsyncIndexFile;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
@@ -115,10 +119,10 @@ where
         where
             T: Deserialize<'de>,
         {
-            type Value = IndexFile;
+            type Value = AsyncIndexFile;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("struct IndexFile")
+                formatter.write_str("struct AsyncIndexFile")
             }
 
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
@@ -158,12 +162,14 @@ where
                     return Err(de::Error::missing_field("reporting_structure"));
                 }
 
-                Ok(IndexFile {
+                Ok(AsyncIndexFile {
                     reporting_entity_name: reporting_entity_name
                         .ok_or_else(|| de::Error::missing_field("reporting_entity_name"))?,
                     reporting_entity_type: reporting_entity_type
                         .ok_or_else(|| de::Error::missing_field("reporting_entity_type"))?,
-                    reporting_structure: vec![],
+                    reporting_structure_processing_stats: ProcessingStats {
+                        num_reporting_structures: reporting_structure.unwrap(),
+                    },
                 })
             }
         }

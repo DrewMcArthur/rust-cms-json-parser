@@ -3,7 +3,9 @@ use std::{fs::File, sync::mpsc::sync_channel, thread};
 use serde::de::DeserializeSeed;
 
 use crate::index_file_parsing::{
-    index_file::IndexFile, meta_repository_trait::DbLinkInput, seed_deserialization::FileSeed,
+    index_file::{AsyncIndexFile, IndexFile, IndexFileMetadata},
+    meta_repository_trait::DbLinkInput,
+    seed_deserialization::FileSeed,
 };
 
 use self::{
@@ -109,28 +111,35 @@ fn _get_filename_from_url(url: &str) -> String {
 
 // SYNC
 pub fn parse_index_file_async(path: &'static str) {
+    let repo: CsvMetaRepository = _get_repo();
     let (sender, receiver) = sync_channel::<ReportingStructure>(0);
+
+    println!("reading from {path}");
+    let file = File::open(path).unwrap();
+    let index_file_metadata: IndexFileMetadata = serde_json::from_reader(&file).unwrap();
+    let index_file_id = repo.add_file(&mut FileRowInput {
+        url: path,
+        filename: "index",
+        reporting_entity_name: &index_file_metadata.reporting_entity_name,
+        reporting_entity_type: &index_file_metadata.reporting_entity_type,
+    });
 
     // Deserialize in a separate thread.
     let deserialize_thread = thread::spawn(move || {
-        println!("reading from {path}");
         let file = File::open(path).unwrap();
-        let mut deserializer = serde_json::de::Deserializer::from_reader(file);
-        let deserialized: IndexFile = FileSeed { sender }.deserialize(&mut deserializer).unwrap();
+        let mut deserializer = serde_json::de::Deserializer::from_reader(&file);
+        let deserialized: AsyncIndexFile =
+            FileSeed { sender }.deserialize(&mut deserializer).unwrap();
         deserialized
     });
-
-    let index_file_id = 10;
-    let reporting_entity_name = "TMP";
-    let reporting_entity_type = "TMP";
 
     while let Ok(value) = receiver.recv() {
         // Process the deserialized values here.
         dbg!(&value);
         handle_reporting_structure(
             index_file_id,
-            reporting_entity_name,
-            reporting_entity_type,
+            &index_file_metadata.reporting_entity_name,
+            &index_file_metadata.reporting_entity_type,
             &value,
         )
     }
