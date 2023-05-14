@@ -45,7 +45,7 @@ fn it_deserializes_cms_examples() {
 fn it_parses_the_example_index_file() {
     let example_index_file_path =
         "./price-transparency-guide/examples/table-of-contents/table-of-contents-sample.json";
-    index_file_parsing::parse_index_file(example_index_file_path);
+    index_file_parsing::parse_index_file_async(example_index_file_path);
 }
 
 #[test]

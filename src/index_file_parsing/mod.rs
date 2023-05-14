@@ -1,6 +1,10 @@
-use std::fs::File;
+use std::{fs::File, sync::mpsc::sync_channel, thread};
 
-use crate::index_file_parsing::{index_file::IndexFile, meta_repository_trait::DbLinkInput};
+use serde::de::DeserializeSeed;
+
+use crate::index_file_parsing::{
+    index_file::IndexFile, meta_repository_trait::DbLinkInput, seed_deserialization::FileSeed,
+};
 
 use self::{
     csv_meta_repository::CsvMetaRepository,
@@ -11,11 +15,13 @@ use self::{
 pub mod csv_meta_repository;
 pub mod index_file;
 pub mod meta_repository_trait;
+mod seed_deserialization;
 
 // given a path to a local index file,
 // deserialize it and its reporting structures,
 // and send files and plan info to DB.
-pub fn parse_index_file(path: &str) {
+#[allow(dead_code)]
+pub fn parse_index_file_sync(path: &str) {
     // get reporting_entity_name & type, publish file & get id
     println!("reading from {path}");
     let file = File::open(path).unwrap();
@@ -99,4 +105,36 @@ fn _get_repo() -> CsvMetaRepository<'static> {
 
 fn _get_filename_from_url(url: &str) -> String {
     return url.split("/").last().unwrap().to_string();
+}
+
+// SYNC
+pub fn parse_index_file_async(path: &'static str) {
+    let (sender, receiver) = sync_channel::<ReportingStructure>(0);
+
+    // Deserialize in a separate thread.
+    let deserialize_thread = thread::spawn(move || {
+        println!("reading from {path}");
+        let file = File::open(path).unwrap();
+        let mut deserializer = serde_json::de::Deserializer::from_reader(file);
+        let deserialized: IndexFile = FileSeed { sender }.deserialize(&mut deserializer).unwrap();
+        deserialized
+    });
+
+    let index_file_id = 10;
+    let reporting_entity_name = "TMP";
+    let reporting_entity_type = "TMP";
+
+    while let Ok(value) = receiver.recv() {
+        // Process the deserialized values here.
+        dbg!(&value);
+        handle_reporting_structure(
+            index_file_id,
+            reporting_entity_name,
+            reporting_entity_type,
+            &value,
+        )
+    }
+
+    // You can also access the `File` after deserializing is complete.
+    dbg!(deserialize_thread.join().unwrap());
 }
