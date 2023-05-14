@@ -1,4 +1,8 @@
-use std::{fs::File, sync::mpsc::sync_channel, thread};
+use std::{
+    fs::File,
+    sync::{mpsc::sync_channel, Arc},
+    thread,
+};
 
 use serde::de::DeserializeSeed;
 
@@ -110,23 +114,24 @@ fn _get_filename_from_url(url: &str) -> String {
 }
 
 // SYNC
-pub fn parse_index_file_async(path: &'static str) {
+pub fn parse_index_file_async(path: Arc<String>) {
     let repo: CsvMetaRepository = _get_repo();
     let (sender, receiver) = sync_channel::<ReportingStructure>(0);
 
     println!("reading from {path}");
-    let file = File::open(path).unwrap();
+    let file = File::open(path.as_ref()).unwrap();
     let index_file_metadata: IndexFileMetadata = serde_json::from_reader(&file).unwrap();
     let index_file_id = repo.add_file(&mut FileRowInput {
-        url: path,
+        url: &path.to_owned(),
         filename: "index",
         reporting_entity_name: &index_file_metadata.reporting_entity_name,
         reporting_entity_type: &index_file_metadata.reporting_entity_type,
     });
 
     // Deserialize in a separate thread.
+    let thread_path = path.clone();
     let deserialize_thread = thread::spawn(move || {
-        let file = File::open(path).unwrap();
+        let file = File::open(thread_path.as_ref()).unwrap();
         let mut deserializer = serde_json::de::Deserializer::from_reader(&file);
         let deserialized: AsyncIndexFile =
             FileSeed { sender }.deserialize(&mut deserializer).unwrap();

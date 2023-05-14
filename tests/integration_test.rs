@@ -1,6 +1,7 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use rust_cms_json_parser::{
@@ -43,8 +44,10 @@ fn it_deserializes_cms_examples() {
 
 #[test]
 fn it_parses_the_example_index_file() {
-    let example_index_file_path =
-        "./price-transparency-guide/examples/table-of-contents/table-of-contents-sample.json";
+    let example_index_file_path = Arc::new(
+        "./price-transparency-guide/examples/table-of-contents/table-of-contents-sample.json"
+            .to_string(),
+    );
     index_file_parsing::parse_index_file_async(example_index_file_path);
 }
 
