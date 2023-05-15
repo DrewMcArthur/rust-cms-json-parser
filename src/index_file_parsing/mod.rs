@@ -8,7 +8,7 @@ use std::{
 use serde::de::DeserializeSeed;
 
 use crate::index_file_parsing::{
-    index_file::{AsyncIndexFile, IndexFile, IndexFileMetadata},
+    index_file::{IndexFile, IndexFileMetadata},
     meta_repository_trait::DbLinkInput,
     seed_deserialization::IndexFileSeed,
 };
@@ -133,17 +133,15 @@ pub fn parse_index_file_async(path: Arc<String>) {
     let deserialize_thread = thread::spawn(move || {
         let file = File::open(thread_path.as_ref()).unwrap();
         let mut deserializer = serde_json::de::Deserializer::from_reader(&file);
-        let deserialized: AsyncIndexFile = IndexFileSeed {
+        IndexFileSeed {
             metadata_sender,
             reporting_structure_sender,
         }
         .deserialize(&mut deserializer)
-        .unwrap();
-        deserialized
+        .unwrap()
     });
 
     let metadata = metadata_receiver.recv().unwrap();
-    println!("got metadata");
     let index_file_id = repo.add_file(&mut FileRowInput {
         url: &path.to_owned(),
         filename: "index",
@@ -152,6 +150,7 @@ pub fn parse_index_file_async(path: Arc<String>) {
     });
 
     println!("handling reporting structures...");
+    let mut num_reporting_structures: usize = 0;
     while let Ok(value) = reporting_structure_receiver.recv() {
         // Process the deserialized values here.
         handle_reporting_structure(
@@ -160,9 +159,17 @@ pub fn parse_index_file_async(path: Arc<String>) {
             &metadata.reporting_entity_type,
             &value,
         );
-        print!(".");
-        stdout().flush().unwrap();
+        num_reporting_structures += 1;
+        if num_reporting_structures % 10 == 0 {
+            print!(
+                "\rhandled {} reporting structures.",
+                num_reporting_structures
+            );
+            stdout().flush().unwrap();
+        }
     }
+
+    println!("done handling reporting structures!");
 
     // You can also access the `File` after deserializing is complete.
     dbg!(deserialize_thread.join().unwrap());
