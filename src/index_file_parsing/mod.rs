@@ -1,5 +1,6 @@
 use std::{
     fs::File,
+    io::{stdout, Write},
     sync::{mpsc::sync_channel, Arc},
     thread,
 };
@@ -66,7 +67,7 @@ fn handle_reporting_structure(
         plan_ids.push(repo.add_plan(&mut PlanInput::from_reporting_plan(&plan)));
     }
 
-    for rate_file in node.in_network_files.as_slice() {
+    for rate_file in node.in_network_files.as_ref().unwrap_or(&vec![]).as_slice() {
         file_ids.push(repo.add_file(&mut FileRowInput {
             url: &rate_file.location,
             filename: _get_filename_from_url(&rate_file.location).as_str(),
@@ -123,7 +124,7 @@ pub fn parse_index_file_async(path: Arc<String>) {
     let repo: CsvMetaRepository = _get_repo();
     let (metadata_sender, metadata_receiver) = sync_channel::<IndexFileMetadata>(0);
     let (reporting_structure_sender, reporting_structure_receiver) =
-        sync_channel::<ReportingStructure>(0);
+        sync_channel::<ReportingStructure>(5);
 
     println!("reading from {path}");
 
@@ -150,15 +151,17 @@ pub fn parse_index_file_async(path: Arc<String>) {
         reporting_entity_type: &metadata.reporting_entity_type,
     });
 
+    println!("handling reporting structures...");
     while let Ok(value) = reporting_structure_receiver.recv() {
         // Process the deserialized values here.
-        dbg!(&value);
         handle_reporting_structure(
             index_file_id,
             &metadata.reporting_entity_name,
             &metadata.reporting_entity_type,
             &value,
-        )
+        );
+        print!(".");
+        stdout().flush().unwrap();
     }
 
     // You can also access the `File` after deserializing is complete.

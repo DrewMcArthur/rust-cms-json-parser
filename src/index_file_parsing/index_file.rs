@@ -28,8 +28,7 @@ pub struct ProcessingStats {
 #[derive(Deserialize, Debug, Default)]
 pub struct ReportingStructure {
     pub reporting_plans: Vec<ReportingPlan>,
-    pub in_network_files: Vec<LinkedFile>,
-    #[serde(skip_serializing_if = "Field::is_missing")]
+    pub in_network_files: Option<Vec<LinkedFile>>,
     pub allowed_amount_file: Option<LinkedFile>,
 }
 
