@@ -16,7 +16,7 @@ use crate::index_file_parsing::{
 use self::{
     csv_meta_repository::CsvMetaRepository,
     index_file::ReportingStructure,
-    meta_repository_trait::{FileRowInput, MetaRepository, PlanInput},
+    meta_repository_trait::{BatchedMetaRepository, FileRowInput, MetaRepository, PlanInput},
     mysql_meta_repository::MysqlMetaRepository,
 };
 
@@ -38,7 +38,7 @@ pub fn parse_index_file_sync(path: &str) {
 
     let repo = _get_repo();
 
-    let index_file_id = repo.add_file(&mut FileRowInput {
+    let index_file_id = repo.add_file(FileRowInput {
         url: path,
         filename: "index",
         reporting_entity_name: &index_file.reporting_entity_name,
@@ -65,12 +65,23 @@ fn handle_reporting_structure(
     let mut plan_ids: Vec<usize> = vec![];
     let mut file_ids: Vec<usize> = vec![];
 
+    repo.add_plans(
+        node.reporting_plans
+            .iter()
+            .map(|plan| PlanInput {
+                plan_name: plan.plan_name.as_str(),
+                plan_id: plan.plan_id.as_str(),
+                plan_id_type: plan.plan_id_type.as_str(),
+                plan_market_type: plan.plan_market_type.as_str(),
+            })
+            .collect(),
+    );
     for plan in node.reporting_plans.as_slice() {
-        plan_ids.push(repo.add_plan(&mut PlanInput::from_reporting_plan(&plan)));
+        plan_ids.push(repo.add_plan(PlanInput::from_reporting_plan(&plan)));
     }
 
     for rate_file in node.in_network_files.as_ref().unwrap_or(&vec![]).as_slice() {
-        file_ids.push(repo.add_file(&mut FileRowInput {
+        file_ids.push(repo.add_file(FileRowInput {
             url: &rate_file.location,
             filename: _get_filename_from_url(&rate_file.location).as_str(),
             reporting_entity_name: reporting_entity_name,
@@ -80,7 +91,7 @@ fn handle_reporting_structure(
 
     if node.allowed_amount_file.is_some() {
         let aa_file = node.allowed_amount_file.as_ref().unwrap();
-        file_ids.push(repo.add_file(&mut FileRowInput {
+        file_ids.push(repo.add_file(FileRowInput {
             url: &aa_file.location.as_str(),
             filename: &aa_file.description.as_str(),
             reporting_entity_name: reporting_entity_name,
@@ -89,7 +100,7 @@ fn handle_reporting_structure(
     }
 
     for file_id in &file_ids {
-        repo.add_link(&mut DbLinkInput {
+        repo.add_link(DbLinkInput {
             from_id: index_file_id.clone(),
             from_type: "index_file",
             to_id: file_id.clone(),
@@ -97,7 +108,7 @@ fn handle_reporting_structure(
         });
 
         for plan_id in &plan_ids {
-            repo.add_link(&mut DbLinkInput {
+            repo.add_link(DbLinkInput {
                 from_id: plan_id.clone(),
                 from_type: "plan",
                 to_id: file_id.clone(),
@@ -107,7 +118,7 @@ fn handle_reporting_structure(
     }
 }
 
-fn _get_repo() -> CsvMetaRepository<'static> {
+fn _get_repo() -> CsvMetaRepository {
     csv_meta_repository::CsvMetaRepository {
         files_csv_path: "./db/files.csv",
         links_csv_path: "./db/links.csv",
@@ -129,7 +140,7 @@ pub fn parse_index_file_async(path: Arc<String>) {
     let repo = _get_mysql_repo();
     let (metadata_sender, metadata_receiver) = sync_channel::<IndexFileMetadata>(0);
     let (reporting_structure_sender, reporting_structure_receiver) =
-        sync_channel::<ReportingStructure>(5);
+        sync_channel::<ReportingStructure>(32);
 
     println!("reading from {path}");
 
@@ -147,7 +158,7 @@ pub fn parse_index_file_async(path: Arc<String>) {
     });
 
     let metadata = metadata_receiver.recv().unwrap();
-    let index_file_id = repo.add_file(&mut FileRowInput {
+    let index_file_id = repo.add_file(FileRowInput {
         url: &path.to_owned(),
         filename: "index",
         reporting_entity_name: &metadata.reporting_entity_name,

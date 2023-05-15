@@ -18,7 +18,7 @@ impl MysqlMetaRepository {
 }
 
 impl BatchedMetaRepository for MysqlMetaRepository {
-    fn add_files(&self, files: Vec<&mut FileRowInput>) -> usize {
+    fn add_files(&self, files: Vec<FileRowInput>) -> usize {
         let mut conn = self.connection_pool.get_conn().unwrap();
         conn.exec_batch(
             r"INSERT INTO file (url, filename, reporting_entity_name, reporting_entity_type)
@@ -36,7 +36,7 @@ impl BatchedMetaRepository for MysqlMetaRepository {
         0
     }
 
-    fn add_links(&self, links: Vec<&mut DbLinkInput>) -> usize {
+    fn add_links(&self, links: Vec<DbLinkInput>) -> usize {
         let mut conn = self.connection_pool.get_conn().unwrap();
         conn.exec_batch(
             r"INSERT INTO link (index_file_id,data_file_id,plan_id)
@@ -65,7 +65,7 @@ impl BatchedMetaRepository for MysqlMetaRepository {
         0
     }
 
-    fn add_plans(&self, plans: Vec<&mut PlanInput>) -> usize {
+    fn add_plans(&self, plans: Vec<PlanInput>) -> usize {
         let mut conn = self.connection_pool.get_conn().unwrap();
         conn.exec_batch(
             r"INSERT INTO plan (plan_name, plan_id_type, plan_id, plan_market_type)
@@ -84,16 +84,16 @@ impl BatchedMetaRepository for MysqlMetaRepository {
     }
 }
 
-impl<'a> MetaRepository<'a> for MysqlMetaRepository {
-    fn add_file(&self, file: &mut FileRowInput) -> usize {
+impl MetaRepository for MysqlMetaRepository {
+    fn add_file(&self, file: FileRowInput) -> usize {
         self.add_files(vec![file])
     }
 
-    fn add_link(&self, link: &'a mut DbLinkInput<'a>) -> usize {
+    fn add_link(&self, link: DbLinkInput) -> usize {
         self.add_links(vec![link])
     }
 
-    fn add_plan(&self, plan: &'a mut PlanInput<'a>) -> usize {
+    fn add_plan(&self, plan: PlanInput) -> usize {
         self.add_plans(vec![plan])
     }
 }

@@ -1,13 +1,13 @@
-pub trait MetaRepository<'a> {
-    fn add_file(&self, file: &'a mut FileRowInput<'a>) -> usize;
-    fn add_link(&self, link: &'a mut DbLinkInput<'a>) -> usize;
-    fn add_plan(&self, plan: &'a mut PlanInput<'a>) -> usize;
+pub trait MetaRepository {
+    fn add_file(&self, file: FileRowInput) -> usize;
+    fn add_link(&self, link: DbLinkInput) -> usize;
+    fn add_plan(&self, plan: PlanInput) -> usize;
 }
 
 pub trait BatchedMetaRepository {
-    fn add_files(&self, files: Vec<&mut FileRowInput>) -> usize;
-    fn add_links(&self, links: Vec<&mut DbLinkInput>) -> usize;
-    fn add_plans(&self, plans: Vec<&mut PlanInput>) -> usize;
+    fn add_files(&self, files: Vec<FileRowInput>) -> usize;
+    fn add_links(&self, links: Vec<DbLinkInput>) -> usize;
+    fn add_plans(&self, plans: Vec<PlanInput>) -> usize;
 }
 
 pub trait FromInput<'a, I, O> {
