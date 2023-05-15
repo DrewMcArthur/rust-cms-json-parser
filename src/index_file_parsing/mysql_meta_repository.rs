@@ -18,7 +18,7 @@ impl MysqlMetaRepository {
 }
 
 impl BatchedMetaRepository for MysqlMetaRepository {
-    fn add_files(&self, files: Vec<FileRowInput>) -> usize {
+    fn add_files(&self, files: Vec<FileRowInput>) -> Vec<usize> {
         let mut conn = self.connection_pool.get_conn().unwrap();
         conn.exec_batch(
             r"INSERT INTO file (url, filename, reporting_entity_name, reporting_entity_type)
@@ -33,10 +33,11 @@ impl BatchedMetaRepository for MysqlMetaRepository {
             }),
         )
         .unwrap();
-        0
+        // TODO get ids
+        vec![]
     }
 
-    fn add_links(&self, links: Vec<DbLinkInput>) -> usize {
+    fn add_links(&self, links: Vec<DbLinkInput>) -> Vec<usize> {
         let mut conn = self.connection_pool.get_conn().unwrap();
         conn.exec_batch(
             r"INSERT INTO link (index_file_id,data_file_id,plan_id)
@@ -62,10 +63,11 @@ impl BatchedMetaRepository for MysqlMetaRepository {
             }),
         )
         .unwrap();
-        0
+        // todo
+        vec![]
     }
 
-    fn add_plans(&self, plans: Vec<PlanInput>) -> usize {
+    fn add_plans(&self, plans: Vec<PlanInput>) -> Vec<usize> {
         let mut conn = self.connection_pool.get_conn().unwrap();
         conn.exec_batch(
             r"INSERT INTO plan (plan_name, plan_id_type, plan_id, plan_market_type)
@@ -80,20 +82,21 @@ impl BatchedMetaRepository for MysqlMetaRepository {
             }),
         )
         .unwrap();
-        0
+        // TODO get ids
+        vec![]
     }
 }
 
 impl MetaRepository for MysqlMetaRepository {
-    fn add_file(&self, file: FileRowInput) -> usize {
-        self.add_files(vec![file])
+    fn add_file(&self, file: FileRowInput) -> Option<usize> {
+        self.add_files(vec![file]).first().copied()
     }
 
-    fn add_link(&self, link: DbLinkInput) -> usize {
-        self.add_links(vec![link])
+    fn add_link(&self, link: DbLinkInput) -> Option<usize> {
+        self.add_links(vec![link]).first().copied()
     }
 
-    fn add_plan(&self, plan: PlanInput) -> usize {
-        self.add_plans(vec![plan])
+    fn add_plan(&self, plan: PlanInput) -> Option<usize> {
+        self.add_plans(vec![plan]).first().copied()
     }
 }

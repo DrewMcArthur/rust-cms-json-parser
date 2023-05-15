@@ -38,12 +38,15 @@ pub fn parse_index_file_sync(path: &str) {
 
     let repo = _get_repo();
 
-    let index_file_id = repo.add_file(FileRowInput {
-        url: path,
-        filename: "index",
-        reporting_entity_name: &index_file.reporting_entity_name,
-        reporting_entity_type: &index_file.reporting_entity_type,
-    });
+    let index_file_id = repo
+        .add_file(FileRowInput {
+            url: path,
+            filename: "index",
+            reporting_entity_name: &index_file.reporting_entity_name,
+            reporting_entity_type: &index_file.reporting_entity_type,
+        })
+        .unwrap()
+        .to_owned();
 
     for node in index_file.reporting_structure {
         handle_reporting_structure(
@@ -62,10 +65,9 @@ fn handle_reporting_structure(
     node: &ReportingStructure,
 ) {
     let repo = _get_mysql_repo();
-    let mut plan_ids: Vec<usize> = vec![];
     let mut file_ids: Vec<usize> = vec![];
 
-    repo.add_plans(
+    let plan_ids = repo.add_plans(
         node.reporting_plans
             .iter()
             .map(|plan| PlanInput {
@@ -76,27 +78,34 @@ fn handle_reporting_structure(
             })
             .collect(),
     );
-    for plan in node.reporting_plans.as_slice() {
-        plan_ids.push(repo.add_plan(PlanInput::from_reporting_plan(&plan)));
-    }
 
-    for rate_file in node.in_network_files.as_ref().unwrap_or(&vec![]).as_slice() {
-        file_ids.push(repo.add_file(FileRowInput {
-            url: &rate_file.location,
-            filename: _get_filename_from_url(&rate_file.location).as_str(),
-            reporting_entity_name: reporting_entity_name,
-            reporting_entity_type: reporting_entity_type,
-        }));
+    if node.in_network_files.is_some() {
+        file_ids = repo.add_files(
+            node.in_network_files
+                .as_ref()
+                .unwrap()
+                .iter()
+                .map(|file| FileRowInput {
+                    url: &file.location,
+                    filename: _get_filename_from_url(&file.location),
+                    reporting_entity_name,
+                    reporting_entity_type,
+                })
+                .collect(),
+        );
     }
 
     if node.allowed_amount_file.is_some() {
         let aa_file = node.allowed_amount_file.as_ref().unwrap();
-        file_ids.push(repo.add_file(FileRowInput {
+        let aa_file_id = repo.add_file(FileRowInput {
             url: &aa_file.location.as_str(),
             filename: &aa_file.description.as_str(),
             reporting_entity_name: reporting_entity_name,
             reporting_entity_type: reporting_entity_type,
-        }));
+        });
+        if aa_file_id.is_some() {
+            file_ids.push(aa_file_id.unwrap().clone());
+        }
     }
 
     for file_id in &file_ids {
@@ -129,8 +138,8 @@ fn _get_mysql_repo() -> MysqlMetaRepository {
     MysqlMetaRepository::new()
 }
 
-fn _get_filename_from_url(url: &str) -> String {
-    return url.split("/").last().unwrap().to_string();
+fn _get_filename_from_url(url: &str) -> &str {
+    return url.split("/").last().unwrap();
 }
 
 // next thing to try: add another sender for the metadata?
@@ -164,6 +173,9 @@ pub fn parse_index_file_async(path: Arc<String>) {
         reporting_entity_name: &metadata.reporting_entity_name,
         reporting_entity_type: &metadata.reporting_entity_type,
     });
+
+    // TODO: get actual id
+    let index_file_id = index_file_id.unwrap_or(0);
 
     println!("handling reporting structures...");
     let mut num_reporting_structures: usize = 0;

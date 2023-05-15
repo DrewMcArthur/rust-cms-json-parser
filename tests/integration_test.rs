@@ -59,14 +59,14 @@ fn it_writes_to_csv_meta_repo() {
         plans_csv_path: "./db/plans.csv",
     };
 
-    let file_id: usize = repo.add_file(FileRowInput {
+    let file_id = repo.add_file(FileRowInput {
         url: "example.com/file.json",
         filename: "file.json",
         reporting_entity_name: "drew",
         reporting_entity_type: "type1",
     });
 
-    let plan_id: usize = repo.add_plan(PlanInput {
+    let plan_id = repo.add_plan(PlanInput {
         plan_name: "plan1",
         plan_id_type: "type1",
         plan_market_type: "market_type1",
@@ -74,9 +74,9 @@ fn it_writes_to_csv_meta_repo() {
     });
 
     repo.add_link(DbLinkInput {
-        from_id: file_id,
+        from_id: file_id.unwrap(),
         from_type: "rate_file",
-        to_id: plan_id,
+        to_id: plan_id.unwrap(),
         to_type: "plan",
     });
 }

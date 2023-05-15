@@ -29,7 +29,7 @@ impl CsvMetaRepository {
         &self,
         db_path: &str,
         row: &'a InputType,
-    ) -> usize
+    ) -> Option<usize>
     where
         <RowType as IntoIterator>::Item: AsRef<[u8]>,
     {
@@ -48,21 +48,21 @@ impl CsvMetaRepository {
             .unwrap();
         csv_writer.flush().unwrap();
         // return id
-        return id;
+        return Some(id);
     }
 }
 
 impl MetaRepository for CsvMetaRepository {
-    fn add_file(&self, file: FileRowInput) -> usize {
-        return self._write_row_to_file_db::<FileRowInput, FileRow>(self.files_csv_path, &file);
+    fn add_file(&self, file: FileRowInput) -> Option<usize> {
+        self._write_row_to_file_db::<FileRowInput, FileRow>(self.files_csv_path, &file)
     }
 
-    fn add_link(&self, link: DbLinkInput) -> usize {
-        return self._write_row_to_file_db::<DbLinkInput, DbLink>(self.links_csv_path, &link);
+    fn add_link(&self, link: DbLinkInput) -> Option<usize> {
+        self._write_row_to_file_db::<DbLinkInput, DbLink>(self.links_csv_path, &link)
     }
 
-    fn add_plan(&self, plan: PlanInput) -> usize {
-        return self._write_row_to_file_db::<PlanInput, Plan>(self.plans_csv_path, &plan);
+    fn add_plan(&self, plan: PlanInput) -> Option<usize> {
+        self._write_row_to_file_db::<PlanInput, Plan>(self.plans_csv_path, &plan)
     }
 }
 
