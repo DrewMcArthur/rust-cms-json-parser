@@ -8,7 +8,7 @@ use serde::{
 
 use crate::index_file_parsing::index_file::ProcessingStats;
 
-use super::index_file::AsyncIndexFile;
+use super::index_file::{AsyncIndexFile, IndexFileMetadata, ReportingStructure};
 
 pub struct ItemSeed<T> {
     pub sender: SyncSender<T>,
@@ -60,14 +60,12 @@ where
     }
 }
 
-pub struct FileSeed<T> {
-    pub sender: SyncSender<T>,
+pub struct IndexFileSeed {
+    pub metadata_sender: SyncSender<IndexFileMetadata>,
+    pub reporting_structure_sender: SyncSender<ReportingStructure>,
 }
 
-impl<'de, T> DeserializeSeed<'de> for FileSeed<T>
-where
-    T: Deserialize<'de>,
-{
+impl<'de> DeserializeSeed<'de> for IndexFileSeed {
     type Value = AsyncIndexFile;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -111,14 +109,12 @@ where
             }
         }
 
-        struct FileVisitor<T> {
-            sender: SyncSender<T>,
+        struct FileVisitor {
+            metadata_sender: SyncSender<IndexFileMetadata>,
+            reporting_structure_sender: SyncSender<ReportingStructure>,
         }
 
-        impl<'de, T> Visitor<'de> for FileVisitor<T>
-        where
-            T: Deserialize<'de>,
-        {
+        impl<'de> Visitor<'de> for FileVisitor {
             type Value = AsyncIndexFile;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -132,8 +128,26 @@ where
                 let mut reporting_entity_name = None;
                 let mut reporting_entity_type = None;
                 let mut reporting_structure = None;
+                let mut sent_metadata = false;
 
                 while let Some(key) = map.next_key()? {
+                    if !sent_metadata
+                        && reporting_entity_name.is_some()
+                        && reporting_entity_type.is_some()
+                    {
+                        self.metadata_sender
+                            .send(IndexFileMetadata {
+                                reporting_entity_name: reporting_entity_name.clone().ok_or_else(
+                                    || de::Error::missing_field("reporting_entity_name"),
+                                )?,
+                                reporting_entity_type: reporting_entity_type.clone().ok_or_else(
+                                    || de::Error::missing_field("reporting_entity_type"),
+                                )?,
+                            })
+                            .unwrap();
+                        sent_metadata = true;
+                        // self.metadata_sender.close();
+                    }
                     match key {
                         Field::ReportingEntityName => {
                             if reporting_entity_name.is_some() {
@@ -152,7 +166,7 @@ where
                                 return Err(de::Error::duplicate_field("reporting_structure"));
                             }
                             reporting_structure = Some(map.next_value_seed(ItemSeed {
-                                sender: self.sender.clone(),
+                                sender: self.reporting_structure_sender.clone(),
                             })?);
                         }
                     }
@@ -183,7 +197,8 @@ where
             "File",
             FIELDS,
             FileVisitor {
-                sender: self.sender,
+                metadata_sender: self.metadata_sender,
+                reporting_structure_sender: self.reporting_structure_sender,
             },
         )
     }

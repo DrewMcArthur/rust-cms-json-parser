@@ -25,11 +25,12 @@ pub struct ProcessingStats {
     pub num_reporting_structures: usize,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 pub struct ReportingStructure {
     pub reporting_plans: Vec<ReportingPlan>,
     pub in_network_files: Vec<LinkedFile>,
-    pub allowed_amount_file: LinkedFile,
+    #[serde(skip_serializing_if = "Field::is_missing")]
+    pub allowed_amount_file: Option<LinkedFile>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -40,7 +41,7 @@ pub struct ReportingPlan {
     pub plan_market_type: String, // TODO: enum
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 pub struct LinkedFile {
     pub description: String,
     pub location: String, // URL

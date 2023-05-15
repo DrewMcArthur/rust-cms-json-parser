@@ -9,7 +9,7 @@ use serde::de::DeserializeSeed;
 use crate::index_file_parsing::{
     index_file::{AsyncIndexFile, IndexFile, IndexFileMetadata},
     meta_repository_trait::DbLinkInput,
-    seed_deserialization::FileSeed,
+    seed_deserialization::IndexFileSeed,
 };
 
 use self::{
@@ -75,12 +75,15 @@ fn handle_reporting_structure(
         }));
     }
 
-    file_ids.push(repo.add_file(&mut FileRowInput {
-        url: &node.allowed_amount_file.location,
-        filename: &node.allowed_amount_file.description,
-        reporting_entity_name: reporting_entity_name,
-        reporting_entity_type: reporting_entity_type,
-    }));
+    if node.allowed_amount_file.is_some() {
+        let aa_file = node.allowed_amount_file.as_ref().unwrap();
+        file_ids.push(repo.add_file(&mut FileRowInput {
+            url: &aa_file.location.as_str(),
+            filename: &aa_file.description.as_str(),
+            reporting_entity_name: reporting_entity_name,
+            reporting_entity_type: reporting_entity_type,
+        }));
+    }
 
     for file_id in &file_ids {
         repo.add_link(&mut DbLinkInput {
@@ -113,38 +116,47 @@ fn _get_filename_from_url(url: &str) -> String {
     return url.split("/").last().unwrap().to_string();
 }
 
-// SYNC
+// next thing to try: add another sender for the metadata?
+// then when we receive that (which should be first)
+// we can add the index file, and be able to handle the reporting_structure nodes
 pub fn parse_index_file_async(path: Arc<String>) {
     let repo: CsvMetaRepository = _get_repo();
-    let (sender, receiver) = sync_channel::<ReportingStructure>(0);
+    let (metadata_sender, metadata_receiver) = sync_channel::<IndexFileMetadata>(0);
+    let (reporting_structure_sender, reporting_structure_receiver) =
+        sync_channel::<ReportingStructure>(0);
 
     println!("reading from {path}");
-    let file = File::open(path.as_ref()).unwrap();
-    let index_file_metadata: IndexFileMetadata = serde_json::from_reader(&file).unwrap();
-    let index_file_id = repo.add_file(&mut FileRowInput {
-        url: &path.to_owned(),
-        filename: "index",
-        reporting_entity_name: &index_file_metadata.reporting_entity_name,
-        reporting_entity_type: &index_file_metadata.reporting_entity_type,
-    });
 
     // Deserialize in a separate thread.
     let thread_path = path.clone();
     let deserialize_thread = thread::spawn(move || {
         let file = File::open(thread_path.as_ref()).unwrap();
         let mut deserializer = serde_json::de::Deserializer::from_reader(&file);
-        let deserialized: AsyncIndexFile =
-            FileSeed { sender }.deserialize(&mut deserializer).unwrap();
+        let deserialized: AsyncIndexFile = IndexFileSeed {
+            metadata_sender,
+            reporting_structure_sender,
+        }
+        .deserialize(&mut deserializer)
+        .unwrap();
         deserialized
     });
 
-    while let Ok(value) = receiver.recv() {
+    let metadata = metadata_receiver.recv().unwrap();
+    println!("got metadata");
+    let index_file_id = repo.add_file(&mut FileRowInput {
+        url: &path.to_owned(),
+        filename: "index",
+        reporting_entity_name: &metadata.reporting_entity_name,
+        reporting_entity_type: &metadata.reporting_entity_type,
+    });
+
+    while let Ok(value) = reporting_structure_receiver.recv() {
         // Process the deserialized values here.
         dbg!(&value);
         handle_reporting_structure(
             index_file_id,
-            &index_file_metadata.reporting_entity_name,
-            &index_file_metadata.reporting_entity_type,
+            &metadata.reporting_entity_name,
+            &metadata.reporting_entity_type,
             &value,
         )
     }
