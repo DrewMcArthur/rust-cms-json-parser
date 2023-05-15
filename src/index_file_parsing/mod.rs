@@ -17,11 +17,13 @@ use self::{
     csv_meta_repository::CsvMetaRepository,
     index_file::ReportingStructure,
     meta_repository_trait::{FileRowInput, MetaRepository, PlanInput},
+    mysql_meta_repository::MysqlMetaRepository,
 };
 
 pub mod csv_meta_repository;
 pub mod index_file;
 pub mod meta_repository_trait;
+mod mysql_meta_repository;
 mod seed_deserialization;
 
 // given a path to a local index file,
@@ -59,7 +61,7 @@ fn handle_reporting_structure(
     reporting_entity_type: &str,
     node: &ReportingStructure,
 ) {
-    let repo = _get_repo();
+    let repo = _get_mysql_repo();
     let mut plan_ids: Vec<usize> = vec![];
     let mut file_ids: Vec<usize> = vec![];
 
@@ -112,6 +114,9 @@ fn _get_repo() -> CsvMetaRepository<'static> {
         plans_csv_path: "./db/plans.csv",
     }
 }
+fn _get_mysql_repo() -> MysqlMetaRepository {
+    MysqlMetaRepository::new()
+}
 
 fn _get_filename_from_url(url: &str) -> String {
     return url.split("/").last().unwrap().to_string();
@@ -121,7 +126,7 @@ fn _get_filename_from_url(url: &str) -> String {
 // then when we receive that (which should be first)
 // we can add the index file, and be able to handle the reporting_structure nodes
 pub fn parse_index_file_async(path: Arc<String>) {
-    let repo: CsvMetaRepository = _get_repo();
+    let repo = _get_mysql_repo();
     let (metadata_sender, metadata_receiver) = sync_channel::<IndexFileMetadata>(0);
     let (reporting_structure_sender, reporting_structure_receiver) =
         sync_channel::<ReportingStructure>(5);

@@ -4,6 +4,12 @@ pub trait MetaRepository<'a> {
     fn add_plan(&self, plan: &'a mut PlanInput<'a>) -> usize;
 }
 
+pub trait BatchedMetaRepository {
+    fn add_files(&self, files: Vec<&mut FileRowInput>) -> usize;
+    fn add_links(&self, links: Vec<&mut DbLinkInput>) -> usize;
+    fn add_plans(&self, plans: Vec<&mut PlanInput>) -> usize;
+}
+
 pub trait FromInput<'a, I, O> {
     fn from_input(id: usize, item: &'a I) -> O;
 }
