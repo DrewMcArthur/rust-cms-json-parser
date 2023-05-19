@@ -1,6 +1,7 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use rust_cms_json_parser::{
@@ -43,9 +44,11 @@ fn it_deserializes_cms_examples() {
 
 #[test]
 fn it_parses_the_example_index_file() {
-    let example_index_file_path =
-        "./price-transparency-guide/examples/table-of-contents/table-of-contents-sample.json";
-    index_file_parsing::parse_index_file(example_index_file_path);
+    let example_index_file_path = Arc::new(
+        "./price-transparency-guide/examples/table-of-contents/table-of-contents-sample.json"
+            .to_string(),
+    );
+    index_file_parsing::parse_index_file_async(example_index_file_path);
 }
 
 #[test]
@@ -56,24 +59,24 @@ fn it_writes_to_csv_meta_repo() {
         plans_csv_path: "./db/plans.csv",
     };
 
-    let file_id: usize = repo.add_file(&mut FileRowInput {
+    let file_id = repo.add_file(FileRowInput {
         url: "example.com/file.json",
         filename: "file.json",
         reporting_entity_name: "drew",
         reporting_entity_type: "type1",
     });
 
-    let plan_id: usize = repo.add_plan(&mut PlanInput {
+    let plan_id = repo.add_plan(PlanInput {
         plan_name: "plan1",
         plan_id_type: "type1",
         plan_market_type: "market_type1",
         plan_id: "0000000",
     });
 
-    repo.add_link(&mut DbLinkInput {
-        from_id: file_id,
+    repo.add_link(DbLinkInput {
+        from_id: file_id.unwrap(),
         from_type: "rate_file",
-        to_id: plan_id,
+        to_id: plan_id.unwrap(),
         to_type: "plan",
     });
 }

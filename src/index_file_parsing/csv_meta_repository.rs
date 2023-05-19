@@ -6,13 +6,13 @@ use super::meta_repository_trait::{
     DbLink, DbLinkInput, FileRow, FileRowInput, FromInput, MetaRepository, Plan, PlanInput,
 };
 
-pub struct CsvMetaRepository<'a> {
-    pub files_csv_path: &'a str,
-    pub links_csv_path: &'a str,
-    pub plans_csv_path: &'a str,
+pub struct CsvMetaRepository {
+    pub files_csv_path: &'static str,
+    pub links_csv_path: &'static str,
+    pub plans_csv_path: &'static str,
 }
 
-impl<'a> CsvMetaRepository<'a> {
+impl CsvMetaRepository {
     fn _get_length_of_file_db(&self, db_path: &str) -> usize {
         // get id of last row in csv file
         // or just length of csv file?
@@ -21,11 +21,15 @@ impl<'a> CsvMetaRepository<'a> {
         return reader.into_records().count() as usize;
     }
 
-    fn _write_row_to_file_db<InputType, RowType: FromInput<'a, InputType, RowType> + IntoIterator>(
+    fn _write_row_to_file_db<
+        'a,
+        InputType,
+        RowType: FromInput<'a, InputType, RowType> + IntoIterator,
+    >(
         &self,
         db_path: &str,
-        row: &'a mut InputType,
-    ) -> usize
+        row: &'a InputType,
+    ) -> Option<usize>
     where
         <RowType as IntoIterator>::Item: AsRef<[u8]>,
     {
@@ -40,26 +44,25 @@ impl<'a> CsvMetaRepository<'a> {
         // todo ensure headers and newline are there
         let mut csv_writer = csv::Writer::from_writer(file_db);
         csv_writer
-            .write_record(RowType::from_input(id, row))
+            .write_record(RowType::from_input(id, &row))
             .unwrap();
         csv_writer.flush().unwrap();
         // return id
-        return id;
+        return Some(id);
     }
 }
 
-impl<'a> MetaRepository<'a> for CsvMetaRepository<'a> {
-    fn add_file(&self, file: &'a mut FileRowInput<'a>) -> usize {
-        return self._write_row_to_file_db::<FileRowInput<'a>, FileRow>(self.files_csv_path, file);
+impl MetaRepository for CsvMetaRepository {
+    fn add_file(&self, file: FileRowInput) -> Option<usize> {
+        self._write_row_to_file_db::<FileRowInput, FileRow>(self.files_csv_path, &file)
     }
 
-    fn add_link(&self, link: &'a mut DbLinkInput<'a>) -> usize {
-        return self
-            ._write_row_to_file_db::<DbLinkInput<'a>, DbLink<'a>>(self.links_csv_path, link);
+    fn add_link(&self, link: DbLinkInput) -> Option<usize> {
+        self._write_row_to_file_db::<DbLinkInput, DbLink>(self.links_csv_path, &link)
     }
 
-    fn add_plan(&self, plan: &'a mut PlanInput<'a>) -> usize {
-        return self._write_row_to_file_db::<PlanInput<'a>, Plan<'a>>(self.plans_csv_path, plan);
+    fn add_plan(&self, plan: PlanInput) -> Option<usize> {
+        self._write_row_to_file_db::<PlanInput, Plan>(self.plans_csv_path, &plan)
     }
 }
 

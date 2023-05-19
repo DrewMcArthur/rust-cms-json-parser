@@ -109,5 +109,4 @@ pub struct ProviderReference {
 }
 
 #[cfg(test)]
-mod tests {
-}
+mod tests {}
